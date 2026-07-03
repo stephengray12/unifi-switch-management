@@ -16,29 +16,37 @@ load_dotenv()
 # CONFIGURATION
 # ======================================================
 
-BASE_URL = "https://192.168.1.252:11443"
-
+BASE_URL = os.getenv("UNIFI_BASE_URL")
 API_KEY = os.getenv("UNIFI_API_KEY")
+SITE_ID = os.getenv("UNIFI_SITE_ID")
+DEVICE_ID = os.getenv("UNIFI_DEVICE_ID")
+INTEGRATION_DEVICE_ID = os.getenv("UNIFI_INTEGRATION_DEVICE_ID")
 
-if not API_KEY:
-    print("ERROR: UNIFI_API_KEY not found in .env")
-    exit(1)
+POE_PORTS = [1, 2, 3, 4]
 
-SITE_ID = "88f7af54-98f8-306a-a1c7-c9349722b1f6"
+console = Console()
 
-# Legacy Device ID (used for PUT updates)
-DEVICE_ID = "6a1f947dda07f9c0cc05b2f2"
+required = {
+    "UNIFI_BASE_URL": BASE_URL,
+    "UNIFI_API_KEY": API_KEY,
+    "UNIFI_SITE_ID": SITE_ID,
+    "UNIFI_DEVICE_ID": DEVICE_ID,
+    "UNIFI_INTEGRATION_DEVICE_ID": INTEGRATION_DEVICE_ID,
+}
 
-# Integration API Device ID (used for status)
-INTEGRATION_DEVICE_ID = "9488c116-9871-3610-a92d-f271acb3d8a9"
+missing = [name for name, value in required.items() if not value]
+
+if missing:
+    console.print("[bold red]Missing required environment variables:[/bold red]")
+    for var in missing:
+        console.print(f" • {var}")
+    raise SystemExit(1)
 
 HEADERS = {
     "X-API-KEY": API_KEY,
     "Accept": "application/json",
     "Content-Type": "application/json"
 }
-
-console = Console()
 
 # ======================================================
 # UTILITIES
@@ -57,21 +65,23 @@ def pause():
 # ======================================================
 
 def get_switch_data():
-    response = requests.get(
-        f"{BASE_URL}/proxy/network/integration/v1/sites/{SITE_ID}/devices/{INTEGRATION_DEVICE_ID}",
-        headers={
-            "X-API-KEY": API_KEY,
-            "Accept": "application/json"
-        },
-        verify=False
-    )
-
-    if response.status_code != 200:
-        console.print("\n[bold red]Failed to retrieve switch data[/bold red]")
-        console.print(response.text)
+    try:
+        response = requests.get(
+            f"{BASE_URL}/proxy/network/integration/v1/sites/{SITE_ID}/devices/{INTEGRATION_DEVICE_ID}",
+            headers={
+                "X-API-KEY": API_KEY,
+                "Accept": "application/json"
+            },
+            verify=False,
+            timeout=10
+        )
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as e:
+        console.print("
+[bold red]Failed to retrieve switch data[/bold red]")
+        console.print(str(e))
         return None
-
-    return response.json()
 
 
 def get_port_info(port_number):
@@ -161,7 +171,8 @@ def set_poe(port, enabled):
         f"{BASE_URL}/proxy/network/api/s/default/rest/device/{DEVICE_ID}",
         headers=HEADERS,
         json=payload,
-        verify=False
+        verify=False,
+        timeout=10
     )
 
     console.print()
@@ -210,7 +221,7 @@ def power_cycle_all_ports(delay):
         "\n[bold yellow]Turning OFF all PoE ports...[/bold yellow]"
     )
 
-    for port in [1, 2, 3, 4]:
+    for port in POE_PORTS:
         set_poe(port, False)
 
     console.print(
@@ -223,7 +234,7 @@ def power_cycle_all_ports(delay):
         "\n[bold yellow]Turning ON all PoE ports...[/bold yellow]"
     )
 
-    for port in [1, 2, 3, 4]:
+    for port in POE_PORTS:
         set_poe(port, True)
 
     console.print(
@@ -247,7 +258,7 @@ def select_poe_port():
 
     port = int(value)
 
-    if port not in [1, 2, 3, 4]:
+    if port not in POE_PORTS:
         return None
 
     return port
