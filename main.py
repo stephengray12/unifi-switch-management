@@ -78,8 +78,7 @@ def get_switch_data():
         response.raise_for_status()
         return response.json()
     except requests.RequestException as e:
-        console.print("
-[bold red]Failed to retrieve switch data[/bold red]")
+        console.print("[bold red]Failed to retrieve switch data[/bold red]")
         console.print(str(e))
         return None
 
