@@ -16,16 +16,10 @@ Python project for interacting with UniFi devices using the UniFi API.
 - python-dotenv
 - rich
 
-## Setup
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
 
 ## Run
 
 ```bash
 python app.py
 ```
+## Future release will include a GUI through pyside6 and QT. The application will still have the command line interface for those who prefer it. This application has been tested on Windows 11 pro and Ubuntu 26 LTS
