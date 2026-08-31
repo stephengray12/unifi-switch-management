@@ -64,3 +64,4 @@ def set_poe(port, enabled):
     response.raise_for_status()
 
     return response
+
