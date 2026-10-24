@@ -69,4 +69,10 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    from views.gui_view import run_gui
+
+    if "--cli" in sys.argv:
+        main()
+    else:
+        run_gui()
